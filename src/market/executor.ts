@@ -21,8 +21,11 @@ export async function executeTrade(decision: BrainDecision): Promise<string | nu
         const txId = await sendLocusPayment(amountToBet, predictionMarketAddress);
         console.log(`[Executor] Locus Transaction Placed successfully! TX ID: ${txId}`);
         return txId;
-    } catch (e) {
+    } catch (e: any) {
         console.error(`[Executor] Locus execution failed:`, e);
+        if (e?.response?.data?.message && e.response.data.message.includes("allowance")) {
+             throw new Error("LOCUS_ALLOWANCE_EXCEEDED: " + e.response.data.message);
+        }
         return null;
     }
 }

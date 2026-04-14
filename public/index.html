@@ -11,10 +11,20 @@
     <div class="background-orb"></div>
     <div class="background-orb orb-2"></div>
     
+    <div id="critical-alert" class="critical-alert hidden">
+        <span class="warning-icon">⚠️</span>
+        <span id="alert-message">Locus API Credit Allowance Reached!</span>
+    </div>
+
     <div class="dashboard">
-        <header class="glass-panel text-center">
-            <h1>AlphaOracle <span class="badge">Live</span></h1>
-            <p>Autonomous Prediction Market Agent</p>
+        <header class="glass-panel" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 style="margin-bottom: 0;">AlphaOracle <span class="badge" id="live-badge">Idle</span></h1>
+                <p style="margin-top: 0.5rem; color: var(--text-muted);">Autonomous Prediction Market Agent</p>
+            </div>
+            <div>
+                <button id="power-btn" class="power-btn">Start Agent</button>
+            </div>
         </header>
 
         <div class="grid">

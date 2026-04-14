@@ -5,6 +5,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const marketIdElem = document.getElementById('market-id');
     const decisionElem = document.getElementById('execution-decision');
     const reasoningText = document.getElementById('reasoning-text');
+    const liveBadge = document.getElementById('live-badge');
+    const powerBtn = document.getElementById('power-btn');
+    const alertBanner = document.getElementById('critical-alert');
+    const alertMessage = document.getElementById('alert-message');
+
+    let isRunning = false;
+
+    // Fetch Initial Status
+    fetch('/api/status').then(r => r.json()).then(data => {
+        updatePowerState(data.running);
+    });
 
     // Connect to SSE
     const evtSource = new EventSource('/api/stream');
@@ -12,7 +23,11 @@ document.addEventListener('DOMContentLoaded', () => {
     evtSource.onmessage = function(event) {
         const data = JSON.parse(event.data);
 
-        if (data.event === 'log') {
+        if (data.event === 'alert') {
+            alertBanner.classList.remove('hidden');
+            if(data.message) alertMessage.textContent = data.message;
+            updatePowerState(false); // Engine auto-stopped on error limits
+        } else if (data.event === 'log') {
             appendLog(data);
         } else if (data.event === 'decision') {
             updateDashboard(data);
@@ -49,6 +64,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Add to top of list
         list.insertBefore(item, list.firstChild);
+    }
+
+    powerBtn.addEventListener('click', async () => {
+        if (isRunning) {
+            await fetch('/api/stop', { method: 'POST' });
+            updatePowerState(false);
+        } else {
+            // hide any previous alerts
+            alertBanner.classList.add('hidden');
+            await fetch('/api/start', { method: 'POST' });
+            updatePowerState(true);
+        }
+    });
+
+    function updatePowerState(running) {
+        isRunning = running;
+        if (isRunning) {
+            powerBtn.textContent = 'Stop Agent';
+            powerBtn.classList.add('running');
+            liveBadge.textContent = 'Live';
+            liveBadge.classList.add('active');
+        } else {
+            powerBtn.textContent = 'Start Agent';
+            powerBtn.classList.remove('running');
+            liveBadge.textContent = 'Idle';
+            liveBadge.classList.remove('active');
+        }
     }
 
     function appendLog(data) {

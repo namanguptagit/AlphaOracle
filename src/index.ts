@@ -13,6 +13,7 @@ export class AgentEngine extends EventEmitter {
     private DRY_RUN = false;
     private INTERVAL_MS = 120 * 1000;
     private timer: NodeJS.Timeout | null = null;
+    private isRunning = false;
 
     // Helper to log both to console and emit to UI
     private logInfo(module: string, message: string) {
@@ -60,16 +61,35 @@ export class AgentEngine extends EventEmitter {
             } else {
                 this.logInfo('Executor', `🟡 Confidence too low or decision is HOLD. Skipping execution.`);
             }
-        } catch (error) {
+        } catch (error: any) {
             this.logError('Error', 'Execution cycle failed:', error);
+            if (error?.message?.includes("LOCUS_ALLOWANCE_EXCEEDED")) {
+                this.emit('alert_update', { message: error.message });
+            }
         }
     }
 
     start() {
-        this.logInfo('Engine', `=== AlphaOracle Autonomous Agent Started ===`);
+        if (this.isRunning) return;
+        this.isRunning = true;
+        this.logInfo('Engine', `=== AlphaOracle Autonomous Agent Loop Started ===`);
         this.logInfo('Engine', `Mode: ${this.DRY_RUN ? 'DRY RUN' : 'LIVE'} | Interval: ${this.INTERVAL_MS / 1000}s`);
 
         this.tick();
         this.timer = setInterval(() => this.tick(), this.INTERVAL_MS);
+    }
+
+    stop() {
+        if (!this.isRunning) return;
+        this.isRunning = false;
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+        this.logInfo('Engine', `=== AlphaOracle Autonomous Agent Stopped ===`);
+    }
+
+    getStatus() {
+        return this.isRunning;
     }
 }
