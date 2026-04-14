@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import axios from 'axios';
 import { analyzeMarketNews } from './brain/analyzer';
 import { fetchLatestNews } from './scraper/newsFetcher';
 import { executeTrade } from './market/executor';
@@ -70,12 +71,27 @@ export class AgentEngine extends EventEmitter {
         }
     }
 
-    start() {
+    private async fetchLiveMarkets() {
+        try {
+            this.logInfo('Engine', 'Fetching real-time markets from Polymarket Gamma API...');
+            const res = await axios.get('https://gamma-api.polymarket.com/events?active=true&closed=false&limit=15');
+            const liveMarkets = res.data.map((event: any) => event.title).filter(Boolean);
+            if (liveMarkets.length > 0) {
+                this.MARKETS = liveMarkets;
+                this.logInfo('Engine', `Successfully ingested ${this.MARKETS.length} live Polymarket events!`);
+            }
+        } catch (e) {
+            this.logError('Engine', 'Failed to fetch Polymarket API, falling back to local defaults.');
+        }
+    }
+
+    async start() {
         if (this.isRunning) return;
         this.isRunning = true;
         this.logInfo('Engine', `=== AlphaOracle Autonomous Agent Loop Started ===`);
         this.logInfo('Engine', `Mode: ${this.DRY_RUN ? 'DRY RUN' : 'LIVE'} | Interval: ${this.INTERVAL_MS / 1000}s`);
 
+        await this.fetchLiveMarkets();
         this.tick();
         this.timer = setInterval(() => this.tick(), this.INTERVAL_MS);
     }

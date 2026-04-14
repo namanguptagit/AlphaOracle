@@ -11,8 +11,8 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 const agent = new AgentEngine();
 
-app.post('/api/start', (req, res) => {
-    agent.start();
+app.post('/api/start', async (req, res) => {
+    await agent.start();
     res.json({ running: agent.getStatus() });
 });
 
