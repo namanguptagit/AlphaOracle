@@ -2,7 +2,6 @@
 
 **AlphaOracle** is a fully autonomous, predictive inference agent built for the Locus Paygentic [Machine Economy Track]. It continuously monitors real-world macroeconomic and crypto trends, arrives at logical market predictions via an LLM, and autonomously executes financial transactions securely via the Locus API gateway.
 
-![AlphaOracle Dashboard](https://raw.githubusercontent.com/namanguptagit/AlphaOracle/main/assets/demo.webp) *(Placeholder)*
 
 ## 🏆 Hackathon Context
 
