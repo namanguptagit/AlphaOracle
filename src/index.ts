@@ -56,6 +56,7 @@ export class AgentEngine extends EventEmitter {
                 this.logInfo('Executor', ` Confidence >= 50%. Proceeding with live execution...`);
                 const txId = await executeTrade(decision);
                 if (txId) {
+                    this.logInfo('Executor', `Locus Transaction Placed successfully! TX ID: ${txId}`);
                     this.emit('execution_update', { txId });
                 }
             } else {
