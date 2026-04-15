@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (data.event === 'execution') {
             const txBox = document.getElementById('transaction-id');
             txBox.textContent = data.txId;
-            txBox.style.color = '#00ff88'; // glow green
+            txBox.style.color = '#4ade80';
 
             // Inject into Ledger
             const marketDesc = document.getElementById('market-id').textContent;
@@ -126,17 +126,17 @@ document.addEventListener('DOMContentLoaded', () => {
         decisionElem.textContent = data.decision;
         decisionElem.className = 'value'; // reset classes
         
-        let colorHex = '#e2e8f0'; // default white/gray
-        
+        let colorHex = '#f0f0f0';
+
         if (data.decision === 'BUY_YES') {
             decisionElem.classList.add('text-green');
-            colorHex = '#00ff88'; // var(--neon-green)
+            colorHex = '#4ade80';
         } else if (data.decision === 'BUY_NO') {
             decisionElem.classList.add('text-red');
-            colorHex = '#ff3366'; // var(--neon-red)
+            colorHex = '#f87171';
         } else {
             decisionElem.classList.add('text-yellow');
-            colorHex = '#ffcc00'; // var(--neon-yellow)
+            colorHex = '#fbbf24';
         }
 
         // Animated Gauge Update

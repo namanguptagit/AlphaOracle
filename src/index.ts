@@ -1,16 +1,16 @@
 import { EventEmitter } from 'events';
-import axios from 'axios';
 import { analyzeMarketNews } from './brain/analyzer';
-import { fetchLatestNews } from './scraper/newsFetcher';
+import { fetchLiveMarketEvents, formatMarketContext, MarketEvent } from './scraper/newsFetcher';
 import { executeTrade } from './market/executor';
 
 export class AgentEngine extends EventEmitter {
-    private MARKETS = [
+    private FALLBACK_MARKETS = [
         "Will the US Federal Reserve cut interest rates at the May meeting?",
         "Will OpenAI release GPT-5 before July?",
         "Will Bitcoin reach $100k in 2026?",
         "Will the SEC approve Solana ETFs by June?"
     ];
+    private liveEvents: MarketEvent[] = [];
     private DRY_RUN = false;
     private INTERVAL_MS = 120 * 1000;
     private timer: NodeJS.Timeout | null = null;
@@ -33,14 +33,24 @@ export class AgentEngine extends EventEmitter {
         this.logInfo('Engine', 'Starting AlphaOracle evaluation cycle...');
 
         try {
-            // 1. Ingestion Phase
-            const activeMarket = this.MARKETS[Math.floor(Math.random() * this.MARKETS.length)];
-            this.logInfo('Scraper', `Fetching latest updates for market: ${activeMarket}`);
-            const news = await fetchLatestNews(activeMarket);
+            // 1. Ingestion Phase — pick a market and build context
+            let activeMarket: string;
+            let newsContext: string;
+
+            if (this.liveEvents.length > 0) {
+                const event = this.liveEvents[Math.floor(Math.random() * this.liveEvents.length)];
+                activeMarket = event.title;
+                newsContext = formatMarketContext(event);
+                this.logInfo('Scraper', `Selected live Polymarket event: ${activeMarket}`);
+            } else {
+                activeMarket = this.FALLBACK_MARKETS[Math.floor(Math.random() * this.FALLBACK_MARKETS.length)];
+                newsContext = `Market question: ${activeMarket}\nNo additional market data available — using general knowledge.`;
+                this.logInfo('Scraper', `Using fallback market: ${activeMarket}`);
+            }
 
             // 2. Reasoning Phase
-            this.logInfo('Brain', 'Analyzing news against market probability...');
-            const decision = await analyzeMarketNews(activeMarket, news);
+            this.logInfo('Brain', 'Analyzing market data against probability...');
+            const decision = await analyzeMarketNews(activeMarket, newsContext);
 
             this.logInfo('Brain', `Confidence: ${(decision.confidence * 100).toFixed(1)}% | Decision: ${decision.decision}`);
             this.logInfo('Brain', `Reasoning: ${decision.reasoning}`);
@@ -61,7 +71,7 @@ export class AgentEngine extends EventEmitter {
                     this.emit('execution_update', { txId });
                 }
             } else {
-                this.logInfo('Executor', `🟡 Confidence too low or decision is HOLD. Skipping execution.`);
+                this.logInfo('Executor', `Confidence too low or decision is HOLD. Skipping execution.`);
             }
         } catch (error: any) {
             this.logError('Error', 'Execution cycle failed:', error);
@@ -74,14 +84,15 @@ export class AgentEngine extends EventEmitter {
     private async fetchLiveMarkets() {
         try {
             this.logInfo('Engine', 'Fetching real-time markets from Polymarket Gamma API...');
-            const res = await axios.get('https://gamma-api.polymarket.com/events?active=true&closed=false&limit=15');
-            const liveMarkets = res.data.map((event: any) => event.title).filter(Boolean);
-            if (liveMarkets.length > 0) {
-                this.MARKETS = liveMarkets;
-                this.logInfo('Engine', `Successfully ingested ${this.MARKETS.length} live Polymarket events!`);
+            this.liveEvents = await fetchLiveMarketEvents();
+            if (this.liveEvents.length > 0) {
+                this.logInfo('Engine', `Successfully ingested ${this.liveEvents.length} live Polymarket events!`);
+            } else {
+                this.logInfo('Engine', 'No live events found, using fallback markets.');
             }
         } catch (e) {
             this.logError('Engine', 'Failed to fetch Polymarket API, falling back to local defaults.');
+            this.liveEvents = [];
         }
     }
 
