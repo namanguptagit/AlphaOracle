@@ -7,9 +7,11 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(cors());
+app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
-const agent = new AgentEngine();
+let tradeAmount = 0.10; // default
+const agent = new AgentEngine(tradeAmount);
 
 app.post('/api/start', async (req, res) => {
     await agent.start();
@@ -21,9 +23,21 @@ app.post('/api/stop', (req, res) => {
     res.json({ running: agent.getStatus() });
 });
 
-app.get('/api/status', (req, res) => {
-    res.json({ running: agent.getStatus() });
+app.post('/api/trade-amount', (req, res) => {
+    const amount = parseFloat(req.body.amount);
+    if (isNaN(amount) || amount <= 0 || amount > 10) {
+        return res.status(400).json({ error: 'Amount must be between $0.01 and $10.00' });
+    }
+    tradeAmount = amount;
+    agent.setTradeAmount(amount);
+    console.log(`[Config] Trade amount updated to: $${amount.toFixed(2)}`);
+    res.json({ tradeAmount });
 });
+
+app.get('/api/status', (req, res) => {
+    res.json({ running: agent.getStatus(), tradeAmount });
+});
+
 app.get('/api/stream', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -60,5 +74,5 @@ app.get('/api/stream', (req, res) => {
 
 app.listen(port, () => {
     console.log(`[Dashboard] Server running at http://localhost:${port}`);
-    console.log(`[Dashboard] Agent is IDLE. Please use the dashboard to start trading.`);
+    console.log(`[Dashboard] Agent is IDLE. Default trade amount: $${tradeAmount.toFixed(2)}`);
 });

@@ -15,6 +15,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fetch Initial Status
     fetch('/api/status').then(r => r.json()).then(data => {
         updatePowerState(data.running);
+        if (data.tradeAmount !== undefined) {
+            const amountEl = document.getElementById('trade-amount');
+            if (amountEl) amountEl.textContent = '$' + data.tradeAmount.toFixed(2);
+            const amountInput = document.getElementById('amount-input');
+            if (amountInput) amountInput.value = data.tradeAmount.toFixed(2);
+        }
     });
 
     // Connect to SSE
@@ -73,6 +79,18 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             // hide any previous alerts
             alertBanner.classList.add('hidden');
+
+            // Send trade amount from input before starting
+            const amountInput = document.getElementById('amount-input');
+            const amount = parseFloat(amountInput.value) || 0.10;
+            await fetch('/api/trade-amount', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount })
+            });
+            const amountEl = document.getElementById('trade-amount');
+            if (amountEl) amountEl.textContent = '$' + amount.toFixed(2);
+
             await fetch('/api/start', { method: 'POST' });
             updatePowerState(true);
         }
@@ -123,11 +141,12 @@ document.addEventListener('DOMContentLoaded', () => {
         reasoningText.textContent = data.reasoning;
 
         // Decision styling
-        decisionElem.textContent = data.decision;
         decisionElem.className = 'value'; // reset classes
         
         let colorHex = '#f0f0f0';
+        const targetConfidence = Math.round(data.confidence * 100);
 
+        decisionElem.textContent = data.decision;
         if (data.decision === 'BUY_YES') {
             decisionElem.classList.add('text-green');
             colorHex = '#4ade80';
@@ -139,8 +158,19 @@ document.addEventListener('DOMContentLoaded', () => {
             colorHex = '#fbbf24';
         }
 
+        // If below threshold, override execution display to CANCELLED
+        if (targetConfidence < 75 || data.decision === 'HOLD') {
+            decisionElem.textContent = 'CANCELLED';
+            decisionElem.classList.add('text-yellow');
+            colorHex = '#fbbf24';
+        }
+
+        // Reset TX ID for this new cycle (execution event will update it if trade goes through)
+        const txBox = document.getElementById('transaction-id');
+        txBox.textContent = 'N/A';
+        txBox.style.color = '';
+
         // Animated Gauge Update
-        const targetConfidence = Math.round(data.confidence * 100);
         confidenceValue.textContent = targetConfidence + '%';
         confidenceValue.style.color = colorHex;
         

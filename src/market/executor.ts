@@ -1,8 +1,7 @@
 import { BrainDecision } from '../brain/analyzer';
 import { authorizeLocusPayment, sendLocusPayment } from '../wallet/locusClient';
 
-export async function executeTrade(decision: BrainDecision): Promise<string | null> {
-    const amountToBet = 1.00; // $1 limit per trade
+export async function executeTrade(decision: BrainDecision, amountToBet: number = 0.10): Promise<string | null> {
     
     // 1. Authorize via Locus Wallet limits
     const authorized = await authorizeLocusPayment(amountToBet);
@@ -19,7 +18,6 @@ export async function executeTrade(decision: BrainDecision): Promise<string | nu
         const predictionMarketAddress = "0x8E1c8280f8DdA821B2c7d9eCcBAd0F85A23C9F47"; 
 
         const txId = await sendLocusPayment(amountToBet, predictionMarketAddress);
-        console.log(`[Executor] Locus Transaction Placed successfully! TX ID: ${txId}`);
         return txId;
     } catch (e: any) {
         console.error(`[Executor] Locus execution failed:`, e);

@@ -12,9 +12,15 @@ export class AgentEngine extends EventEmitter {
     ];
     private liveEvents: MarketEvent[] = [];
     private DRY_RUN = false;
-    private INTERVAL_MS = 120 * 1000;
+    private INTERVAL_MS = 60 * 1000;
     private timer: NodeJS.Timeout | null = null;
     private isRunning = false;
+    private tradeAmount: number;
+
+    constructor(tradeAmount: number = 0.10) {
+        super();
+        this.tradeAmount = tradeAmount;
+    }
 
     // Helper to log both to console and emit to UI
     private logInfo(module: string, message: string) {
@@ -63,9 +69,9 @@ export class AgentEngine extends EventEmitter {
                 return;
             }
 
-            if (decision.confidence >= 0.50 && decision.decision !== 'HOLD') {
-                this.logInfo('Executor', ` Confidence >= 50%. Proceeding with live execution...`);
-                const txId = await executeTrade(decision);
+            if (decision.confidence >= 0.75 && decision.decision !== 'HOLD') {
+                this.logInfo('Executor', ` Confidence >= 75%. Proceeding with live execution...`);
+                const txId = await executeTrade(decision, this.tradeAmount);
                 if (txId) {
                     this.logInfo('Executor', `Locus Transaction Placed successfully! TX ID: ${txId}`);
                     this.emit('execution_update', { txId });
@@ -119,5 +125,9 @@ export class AgentEngine extends EventEmitter {
 
     getStatus() {
         return this.isRunning;
+    }
+
+    setTradeAmount(amount: number) {
+        this.tradeAmount = amount;
     }
 }

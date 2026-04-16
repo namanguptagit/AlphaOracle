@@ -10,7 +10,7 @@ export async function authorizeLocusPayment(usdAmount: number): Promise<boolean>
     const apiKey = process.env.LOCUS_API_KEY;
     console.log(`[Wallet] Checking Agent wallet limits for $${usdAmount.toFixed(2)} transaction...`);
     
-    if (usdAmount > 1.00) {
+    if (usdAmount > 10.00) {
         console.error(`[Wallet] Transaction limits exceeded.`);
         return false;
     }
